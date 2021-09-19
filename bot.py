@@ -5,6 +5,7 @@ import sys
 from youtube_dl import YoutubeDL
 import requests
 import asyncio
+import time
 
 import urllib
 import pafy
@@ -15,7 +16,8 @@ from dotenv import load_dotenv
 load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 
-FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn'}
+#'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+FFMPEG_OPTIONS = {'before_options': '-reconnect 1', 'options': '-vn'}
 
 #create the client
 intents = discord.Intents().all()
@@ -53,15 +55,20 @@ async def play(ctx):
         return
 
     title, url = search(ctx.message.content[5::])
+    test_source = "test.mp3"
 
     #play the music
     try :
         server = ctx.message.guild
         voice_channel = server.voice_client
-        audio_source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS, stderr=sys.stdout)
-        async with ctx.typing():
-            voice_channel.play(audio_source, after=lambda e: print('Done playing'))
+        audio_source = discord.FFmpegPCMAudio(source=url, **FFMPEG_OPTIONS, stderr=sys.stdout)
+        #async with ctx.typing():
+        voice_channel.play(audio_source, after=lambda e: print('Done playing'))
         await ctx.send('Now playing: {}'.format(title))
+        if voice_channel.is_playing():
+            print("playing music")
+        else:
+            print("AHHHH BAD")
     except Exception as e:
         print(e)
         await ctx.send("I am having some issues playing: {}".format(title))
