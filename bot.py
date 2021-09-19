@@ -55,7 +55,6 @@ async def play(ctx):
         return
 
     title, url = search(ctx.message.content[5::])
-    test_source = "test.mp3"
 
     #play the music
     try :
