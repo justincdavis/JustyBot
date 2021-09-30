@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned_or
 from dotenv import load_dotenv
 import os
+from cogs import events
 
 #creates the bot
 def create_bot():
@@ -13,7 +14,7 @@ def create_bot():
 #add command cog
 def add_command_cogs(bot, cogs):
     for cog in cogs:
-        bot.add_cog
+        bot.add_cog(cog)
 
 #loads the discord token from the .env
 def get_discord_token():
@@ -22,5 +23,5 @@ def get_discord_token():
 
 if __name__ == "__main__":
     bot = create_bot()
-    add_command_cogs(bot, [])
+    add_command_cogs(bot, [events.Events(bot)])
     bot.run(get_discord_token())
