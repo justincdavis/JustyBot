@@ -17,6 +17,7 @@ class Music(commands.Cog):
         return self.song_queue.get_next_song()
 
     def add_song(self, search):
+        print("Added a song")
         self.song_queue.add_song(get_song_youtube(search))
 
     async def play_next_song(self, ctx, first_call):
@@ -77,30 +78,3 @@ class Music(commands.Cog):
                 await self.play_next_song(ctx, True)
             except Exception as e:
                 raise e
-
-
-# #join a voice channel and play music
-# @bot.command()
-# async def play(ctx):
-#     if not ctx.voice_client:
-#         await ctx.send("Not in a voice channel, please use $join")
-#         return
-
-#     title, url = search(ctx.message.content[5::])
-
-#     #play the music
-#     try :
-#         server = ctx.message.guild
-#         voice_channel = server.voice_client
-#         audio_source = discord.FFmpegPCMAudio(source=url, **FFMPEG_OPTIONS, stderr=sys.stdout)
-#         async with ctx.typing():
-#             voice_channel.play(audio_source, after=lambda e: print('Done playing'))
-#         await ctx.send('Now playing: {}'.format(title))
-#         if voice_channel.is_playing():
-#             print("playing music")
-#         else:
-#             print("AHHHH BAD")
-#     except Exception as e:
-#         print(e)
-#         await ctx.send("I am having some issues playing: {}".format(title))
-#         return
