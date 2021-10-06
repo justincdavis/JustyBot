@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned_or
 from dotenv import load_dotenv
 import os
-from cogs import events
+from cogs import events, music
 
 #creates the bot
 def create_bot():
@@ -23,5 +23,5 @@ def get_discord_token():
 
 if __name__ == "__main__":
     bot = create_bot()
-    add_command_cogs(bot, [events.Events(bot)])
+    add_command_cogs(bot, [events.Events(bot), music.Music(bot)])
     bot.run(get_discord_token())
