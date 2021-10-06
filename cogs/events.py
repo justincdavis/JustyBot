@@ -12,5 +12,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, discord.ext.commands.errors.CommandNotFound):
+            print("Command not found: {}".format(ctx.message.content))
             await ctx.send("Command not found")
-        print("Command error on message: {}".format(ctx.message.content))
+        else:
+            print("Command error on message: {}".format(ctx.message.content))

@@ -34,7 +34,7 @@ class Music(commands.Cog):
                 return
         source = discord.FFmpegPCMAudio(source=url, **FFMPEG_OPTIONS, stderr=sys.stdout)
         async with ctx.typing():
-            ctx.voice_client.play(source, after=lambda e: self.play_next_song(ctx, False))
+            ctx.voice_client.play(source, after = await self.play_next_song(ctx, False))
         await ctx.send('Now playing: {} by {}, {} seconds'.format(title, artist, duration))
 
     @commands.command
