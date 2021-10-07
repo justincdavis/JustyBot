@@ -29,6 +29,8 @@ class Song:
         if(self.duration != None):
             return self.duration
         return 999
+    def get_all_data(self):
+        return self.get_url(), self.get_title(), self.get_artist(), self.get_duration()
     def set_title(self, title):
         self.title = title
     def set_artist(self, artist):

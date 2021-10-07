@@ -17,26 +17,22 @@ class Music(commands.Cog):
         return self.song_queue.get_next_song()
 
     def add_song(self, search):
-        print("Added a song")
         self.song_queue.add_song(get_song_youtube(search))
 
-    async def play_next_song(self, ctx, first_call):
+    async def play_next_song(self, ctx):
         song = self.get_next_song()
         if(song != None):
-            url = song.get_url()
-            title = song.get_title()
-            artist = song.get_artist()
-            duration = song.get_duration()
+            url, title, artist, duration = song.get_all_data()
         else:
-            if(first_call):
-                raise commands.CommandError("No songs in the queue")
-            else:
-                await ctx.send("Ran out of songs in the queue!")
-                return
-        source = discord.FFmpegPCMAudio(source=url, **FFMPEG_OPTIONS, stderr=sys.stdout)
-        async with ctx.typing():
-            ctx.voice_client.play(source, after = await self.play_next_song(ctx, False))
+            return
+        async with ctx.typing():  
+            source = discord.FFmpegPCMAudio(source=url, **FFMPEG_OPTIONS, stderr=sys.stdout)
+            ctx.voice_client.play(source, after = self.check_queue())
         await ctx.send('Now playing: {} by {}, {} seconds'.format(title, artist, duration))
+
+    def check_queue(self):
+        if(self.song_queue.get_num_songs() > 0):
+            print("I should play another song")
 
     @commands.command
     async def echo(self, ctx):
@@ -45,6 +41,7 @@ class Music(commands.Cog):
     @commands.command()
     async def join(self, ctx):
         if ctx.author.voice == None or ctx.author.voice.channel == None:
+            await ctx.send("User is not in a voice channel")
             raise commands.CommandError("User is not in a voice channel")      
         channel = ctx.message.author.voice.channel
         await channel.connect()
@@ -54,7 +51,8 @@ class Music(commands.Cog):
         if ctx.guild.voice_client:
             await ctx.guild.voice_client.disconnect()
         else:
-            raise commands.CommandError("Not connected to a voice channel")  
+            await ctx.send("Bot not connected to a voice channel")
+            raise commands.CommandError("Bot not connected to a voice channel")  
 
     @commands.command()
     async def stop(self, ctx):
@@ -63,7 +61,7 @@ class Music(commands.Cog):
     @commands.command()
     async def skip(self, ctx):
         if ctx.guild.voice_client:
-            self.play_next_song(ctx)
+            await self.play_next_song(ctx)
         else:
             raise commands.CommandError("Not playing any music")  
 
@@ -75,6 +73,10 @@ class Music(commands.Cog):
             try:
                 await self.join(ctx)
                 self.add_song(ctx.message.content[5::])
-                await self.play_next_song(ctx, True)
+                await self.play_next_song(ctx)
             except Exception as e:
                 raise e
+
+#change stop to stop the voice broadcast player
+#change leave to do stop and then disconnnect
+#change skip to add await stop then play_next
