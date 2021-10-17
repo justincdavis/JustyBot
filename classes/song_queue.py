@@ -78,7 +78,7 @@ def search_youtube_video(search):
 
 def get_song_youtube(search):
     title, artist, url, duration = search_youtube_video(search)
-    return Song(title, artist, url, duration)
+    return build_song(title, artist, url, duration)
 
 def build_song(title, artist, url, duration):
     return Song(title, artist, url, duration)
