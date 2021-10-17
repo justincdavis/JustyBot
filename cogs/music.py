@@ -4,6 +4,7 @@ from discord.ext.commands.bot import when_mentioned_or
 from discord.ext.commands.errors import CommandError
 from classes.song_queue import Song,Song_Queue,get_song_youtube
 import sys
+import asyncio
 
 #GLOBAL OPTIONS
 FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
@@ -14,6 +15,15 @@ class Music(commands.Cog):
         self.bot = bot 
         self.song_queue = Song_Queue([])
         self.current_song = None
+        self.current_voice_ctx = None
+        self.last_command = None
+
+    def update_ctx(self, ctx):
+        if ctx != None:
+            self.current_voice_ctx = ctx
+
+    def update_last_command(self, com):
+        self.last_command = com
 
     def get_next_song(self):
         return self.song_queue.get_next_song()
@@ -26,6 +36,7 @@ class Music(commands.Cog):
         self.song_queue.add_song(get_song_youtube(search))
 
     async def play_next_song(self, ctx):
+        self.update_ctx(ctx)
         if not ctx.guild.voice_client:
             ctx.guild.voice_client.resume()
         song = self.get_next_song()
@@ -38,16 +49,20 @@ class Music(commands.Cog):
         async with ctx.typing(): 
             source = discord.FFmpegPCMAudio(source=url, **FFMPEG_OPTIONS, stderr=sys.stdout)
             try:
-                ctx.voice_client.play(source, after = self.finished_song())
+                ctx.voice_client.play(source, after = self.finished_song)
             except Exception as e:
                 raise e
             await ctx.send('Now playing: {} by {}, {} seconds'.format(title, artist, duration))
 
-    def finished_song(self):
-        print("song done")
+    def finished_song(self, ctx):
+        if self.last_command == self.skip:
+            return
+        else:
+            print("song finished playing")
 
     @commands.command()
     async def join(self, ctx):
+        self.update_last_command(self.join)
         if ctx.author.voice == None or ctx.author.voice.channel == None:
             await ctx.send("User is not in a voice channel")
             raise CommandError("User is not in a voice channel")      
@@ -56,6 +71,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def leave(self, ctx):
+        self.update_last_command(self.leave)
         if ctx.guild.voice_client:
             await ctx.guild.voice_client.disconnect()
         else:
@@ -64,12 +80,14 @@ class Music(commands.Cog):
 
     @commands.command()
     async def stop(self, ctx):
+        self.update_last_command(self.stop)
         if ctx.guild.voice_client.is_playing():
             ctx.guild.voice_client.stop()
             await ctx.send("Stopped playing: {}".format(self.current_song.get_title()))
 
     @commands.command()
     async def skip(self, ctx):
+        self.update_last_command(self.skip)
         if ctx.guild.voice_client.is_playing():
             await self.stop(ctx)
             await self.play_next_song(ctx)
@@ -81,6 +99,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def pause(self, ctx):
+        self.update_last_command(self.pause)
         if ctx.guild.voice_client.is_playing():
             ctx.guild.voice_client.pause()
             await ctx.send("Paused the music player")
@@ -89,16 +108,19 @@ class Music(commands.Cog):
 
     @commands.command()
     async def unpause(self, ctx):
+        self.update_last_command(self.unpause)
         await self.resume(ctx)
 
     @commands.command()
     async def resume(self, ctx):
+        self.update_last_command(self.resume)
         if ctx.guild.voice_client.is_paused():
             ctx.guild.voice_client.resume()
             await ctx.send("Unpaused the music player")
 
     @commands.command()
     async def play(self, ctx):
+        self.update_last_command(self.play)
         if ctx.guild.voice_client:
             if (ctx.guild.voice_client.is_paused() and len(ctx.message.content) < 6):
                 await self.resume(ctx)

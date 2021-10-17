@@ -8,6 +8,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Logged on as {0}!".format(self.bot.user))
+        await self.bot.change_presence(activity=discord.Game(name='$help'))
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
