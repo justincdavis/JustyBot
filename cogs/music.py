@@ -21,6 +21,7 @@ class Music(commands.Cog):
     def update_ctx(self, ctx):
         if ctx != None:
             self.current_voice_ctx = ctx
+        return self.current_voice_ctx
 
     def update_last_command(self, com):
         self.last_command = com
@@ -30,19 +31,20 @@ class Music(commands.Cog):
 
     async def add_song(self, ctx, search):
         song = get_song_youtube(search)
-        url, title, artist, duration = song.get_all_data()
+        url, title, artist, duration, youtube_url = song.get_all_data()
         if(ctx.guild.voice_client.is_playing()):
             await ctx.send('{} by {} has been added to the queue'.format(title, artist, duration))
+            await ctx.send(youtube_url)
         self.song_queue.add_song(get_song_youtube(search))
 
     async def play_next_song(self, ctx):
-        self.update_ctx(ctx)
-        if not ctx.guild.voice_client:
+        ctx = self.update_ctx(ctx)
+        if not ctx.guild.voice_client.is_playing() and ctx.guild.voice_client:
             ctx.guild.voice_client.resume()
         song = self.get_next_song()
         self.current_song = song
         if(song != None):
-            url, title, artist, duration = song.get_all_data()
+            url, title, artist, duration, youtube_url = song.get_all_data()
         else:
             await ctx.send("No more songs in the queue")
             return 
@@ -53,12 +55,14 @@ class Music(commands.Cog):
             except Exception as e:
                 raise e
             await ctx.send('Now playing: {} by {}, {} seconds'.format(title, artist, duration))
+            await ctx.send(youtube_url)
 
     def finished_song(self, ctx):
-        if self.last_command == self.skip:
+        if self.last_command == self.stop:
             return
         else:
-            print("song finished playing")
+            coro = self.play_next_song(self.current_voice_ctx)
+            asyncio.run_coroutine_threadsafe(coro, self.bot.loop)
 
     @commands.command()
     async def join(self, ctx):
@@ -117,6 +121,8 @@ class Music(commands.Cog):
         if ctx.guild.voice_client.is_paused():
             ctx.guild.voice_client.resume()
             await ctx.send("Unpaused the music player")
+        if self.song_queue.get_num_songs() > 0 and self.last_command == self.stop:
+            await self.play_next_song(ctx)
 
     @commands.command()
     async def play(self, ctx):

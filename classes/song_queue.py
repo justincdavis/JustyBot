@@ -4,10 +4,11 @@ import requests
 #Stores title, artist, url and duration for songs acquired through YoutubeDL
 class Song:
     #Built in Methods
-    def __init__(self, title, artist, url, duration):
+    def __init__(self, title, artist, url, youtube_url, duration):
         self.title = title
         self.artist = artist
         self.url = url
+        self.youtube_url = youtube_url
         self.duration = duration
     def __repr__(self):
         rep = 'Song(title: ' + self.title + '; artist: ' + self.artist
@@ -25,18 +26,22 @@ class Song:
         return "Undefined"
     def get_url(self):
         return self.url
+    def get_youtube_url(self):
+        return self.youtube_url
     def get_duration(self):
         if(self.duration != None):
             return self.duration
         return 999
     def get_all_data(self):
-        return self.get_url(), self.get_title(), self.get_artist(), self.get_duration()
+        return self.get_url(), self.get_title(), self.get_artist(), self.get_duration(), self.get_youtube_url()
     def set_title(self, title):
         self.title = title
     def set_artist(self, artist):
         self.artist = artist
     def set_url(self, url):
         self.url = url
+    def set_youtube_url(self, youtube_url):
+        self.youtube_url = youtube_url
     def set_duration(self, duration):
         self.duration = duration
 
@@ -74,11 +79,11 @@ def search_youtube_video(search):
         try: requests.get(search)
         except: info = ydl.extract_info(f"ytsearch:{search}", download=False)['entries'][0]
         else: info = ydl.extract_info(search, download=False)
-    return (info['title'], info['uploader'], info['formats'][0]['url'], info['duration'])
+    return (info['title'], info['uploader'], info['formats'][0]['url'], info['webpage_url'], info['duration'])
 
 def get_song_youtube(search):
-    title, artist, url, duration = search_youtube_video(search)
-    return build_song(title, artist, url, duration)
+    title, artist, url, youtube_url, duration = search_youtube_video(search)
+    return build_song(title, artist, url, youtube_url, duration)
 
-def build_song(title, artist, url, duration):
-    return Song(title, artist, url, duration)
+def build_song(title, artist, url, youtube_url, duration):
+    return Song(title, artist, url, youtube_url, duration)
