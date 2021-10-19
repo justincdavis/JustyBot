@@ -39,15 +39,15 @@ class Music(commands.Cog):
 
     async def play_next_song(self, ctx):
         ctx = self.update_ctx(ctx)
-        if not ctx.guild.voice_client.is_playing() and ctx.guild.voice_client:
-            ctx.guild.voice_client.resume()
+        ctx.guild.voice_client.resume()
         song = self.get_next_song()
         self.current_song = song
         if(song != None):
             url, title, artist, duration, youtube_url = song.get_all_data()
         else:
+            ctx.guild.voice_client.stop()
             await ctx.send("No more songs in the queue")
-            return 
+            return
         async with ctx.typing(): 
             source = discord.FFmpegPCMAudio(source=url, **FFMPEG_OPTIONS, stderr=sys.stdout)
             try:
@@ -128,10 +128,12 @@ class Music(commands.Cog):
     async def play(self, ctx):
         self.update_last_command(self.play)
         if ctx.guild.voice_client:
+            if(len(ctx.message.content) > 6):
+                await self.add_song(ctx, ctx.message.content[5::])
             if (ctx.guild.voice_client.is_paused() and len(ctx.message.content) < 6):
                 await self.resume(ctx)
-            elif(len(ctx.message.content) > 6):
-                await self.add_song(ctx, ctx.message.content[5::])
+            elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
+                await self.play_next_song(ctx)
             else:
                 await ctx.send("Please provide a song to play")
         else:
@@ -141,3 +143,6 @@ class Music(commands.Cog):
                 await self.play_next_song(ctx)
             except Exception as e:
                 raise e
+
+#TAKE A YOUTUBE LINK TO PLAY
+#REMOVE LAST SONG FROM QUEUE
