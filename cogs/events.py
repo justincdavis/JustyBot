@@ -1,6 +1,10 @@
 import discord
 from discord.ext import commands
 
+#TODO
+# WANT TO INTEGRATE CUSTOM EVENTS????? IS THIS POSSIBLE IN DISCORD.PY
+# EVERY TYPE OF EVENT SHOULD REALLY BE HANDLED IN HERE EVEN IF IT IS JUST A RETURN
+
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
