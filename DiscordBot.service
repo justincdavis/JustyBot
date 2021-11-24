@@ -1,14 +1,12 @@
-Description=Discord Both service for music and misc stuff
-
-Wants=network.target
-After=syslog.target network-online.target
+[Unit]
+Description=Discord Bot
+After=multi-user.target
 
 [Service]
 Type=simple
 ExecStart=/home/pi/JustyBot/run.sh
 Restart=on-failure
 RestartSec=10
-KillMode=process
 
 [Install]
 WantedBy=multi-user.target
