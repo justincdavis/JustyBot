@@ -23,12 +23,7 @@ def get_discord_token():
     return os.getenv('DISCORD_TOKEN')
 
 if __name__ == "__main__":
-    
-    with open("debug.txt") as f:
-        for i in range(10):
-            f.write(i)
-
-    args = sys.argv[1:]
+     args = sys.argv[1:]
     bot = create_bot()
     cogs = [events.Events(bot), music.Music(bot), utility.Utility(bot)]
     add_command_cogs(bot, cogs)
