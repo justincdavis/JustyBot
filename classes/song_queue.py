@@ -30,6 +30,11 @@ class Song_Queue:
     def get_num_songs(self):
         return self.count
 
+#TODO
+# IMPLEMENT OTHER SONG SOURCES APART FROM YOUTUBE
+# THESE COULD SIMPLY BE EXPANDING OF THE search_SOURCE_song and get_song_SOURCE formats
+# Music cog would implement these functions based on commands and default 'mode'
+
 #If the top url found is a video it will get the video, if it is a playlist it will turn the playlist into a single track
 def search_youtube_video(search):
     with YoutubeDL({'format': 'bestaudio', 'noplaylist':True, 'logtostderr':False, 'quiet':True, 'no_warnings':True, 'source_address': '0.0.0.0'}) as ydl:
