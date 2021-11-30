@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 run.py
+/usr/bin/python3 /home/pi/JustyBot/run.py

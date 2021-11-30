@@ -1,10 +1,12 @@
+#!/usr/bin/python3
+
 import discord
 from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned_or
-from dotenv import load_dotenv
 import os
 import sys
 from cogs import events, music, utility
+from dotenv import load_dotenv
 
 #creates the bot
 def create_bot():
@@ -19,11 +21,13 @@ def add_command_cogs(bot, cogs):
 
 #loads the discord token from the .env
 def get_discord_token():
+    # config = dotenv_values(".env")
+    # return config['DISCORD_TOKEN']
     load_dotenv()
-    return os.getenv('DISCORD_TOKEN')
+    return os.getenv("DISCORD_TOKEN")
 
 if __name__ == "__main__":
-     args = sys.argv[1:]
+    args = sys.argv[1:]
     bot = create_bot()
     cogs = [events.Events(bot), music.Music(bot), utility.Utility(bot)]
     add_command_cogs(bot, cogs)
