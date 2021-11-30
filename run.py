@@ -21,8 +21,6 @@ def add_command_cogs(bot, cogs):
 
 #loads the discord token from the .env
 def get_discord_token():
-    # config = dotenv_values(".env")
-    # return config['DISCORD_TOKEN']
     load_dotenv()
     return os.getenv("DISCORD_TOKEN")
 
