@@ -1,0 +1,10 @@
+[Unit]
+Description = Run the bot
+After = multi-user.target
+
+[Service]
+ExecStart = /home/pi/JustyBot/run.sh > /home/pi/JustyBot/run.log 2>&1
+User = pi
+
+[Install]
+WantedBy = multi-user.target
