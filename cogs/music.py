@@ -146,20 +146,16 @@ class Music(commands.Cog):
     async def play(self, ctx):
         self.update_last_command(self.play)
         if ctx.guild.voice_client:
+            if (ctx.guild.voice_client.is_paused()):
+                await self.resume(ctx)
+            elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
+                await self.play_next_song(ctx)
+
             if (len(ctx.message.content) > 6):
                 await self.add_song(ctx, ctx.message.content[5::])
-                if (ctx.guild.voice_client.is_paused()):
-                    await self.resume(ctx)
-                elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
-                    await self.play_next_song(ctx)
             else:
-                if (ctx.guild.voice_client.is_paused()):
-                    await self.resume(ctx)
-                elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
-                    await self.play_next_song(ctx)
-                else:
-                    async with ctx.typing(): 
-                        await ctx.send("Please provide a song to play")
+                async with ctx.typing(): 
+                    await ctx.send("Please provide a song to play")
         else:
             try:
                 await self.join(ctx)
@@ -191,10 +187,12 @@ class Music(commands.Cog):
 
     @commands.command()
     async def queue(self, ctx):
+        self.update_last_command(self.queue)
         await self.add_song(ctx, ctx.message.content[6::])
 
     @commands.command()
     async def remove(self, ctx):
+        self.update_last_command(self.remove)
         index = int(ctx.message.content[7::])
         song = self.song_queue.remove_by_index(index)
         if(song == None):
@@ -207,6 +205,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def clearqueue(self, ctx):
+        self.update_last_command(self.clearqueue)
         if(self.song_queue.get_num_songs() > 0):
             async with ctx.typing(): 
                 self.song_queue.clear()
@@ -217,6 +216,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def viewqueue(self, ctx):
+        self.update_last_command(self.viewqueue)
         async with ctx.typing(): 
             await ctx.send(self.song_queue.print_discord())
 
