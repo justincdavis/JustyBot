@@ -174,7 +174,11 @@ class Music(commands.Cog):
 
     @commands.command()
     async def queue(self, ctx):
-        await ctx.send(song_queue.print_discord())
+        await self.add_song(ctx, ctx.message.content[6::])
+
+    @commands.command()
+    async def viewqueue(self, ctx):
+        await ctx.send(self.song_queue.print_discord())
 
 #TAKE A YOUTUBE LINK TO PLAY
 #REMOVE LAST SONG FROM QUEUE
