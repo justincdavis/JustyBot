@@ -19,6 +19,8 @@ class Song_Queue:
         return str_rep + '}'
     # formatting for printing in discord
     def print_discord(self):
+        if(self.get_num_songs() == 0):
+            return "`No songs in the queue :(`"
         dis_str = "`"
         for i in range(len(self.songs)):
             dis_str += str(i+1) + ": "

@@ -43,7 +43,7 @@ class Music(commands.Cog):
         url, title, artist, duration, youtube_url = song.get_all_data()
         if(ctx.guild.voice_client.is_playing()):
             async with ctx.typing(): 
-                await ctx.send('{} by {} has been added to the queue'.format(title, artist, duration))
+                await ctx.send('`{} by {} has been added to the queue`'.format(title, artist, duration))
                 await ctx.send(youtube_url)
         self.song_queue.add_song(get_song_youtube(search))
 
@@ -57,7 +57,7 @@ class Music(commands.Cog):
         else:
             ctx.guild.voice_client.stop()
             async with ctx.typing(): 
-                await ctx.send("No more songs in the queue")
+                await ctx.send("`No more songs in the queue`")
             return
         async with ctx.typing(): 
             source = discord.FFmpegPCMAudio(source=url, **FFMPEG_OPTIONS, stderr=sys.stdout)
@@ -66,7 +66,7 @@ class Music(commands.Cog):
             except Exception as e:
                 raise e
             async with ctx.typing(): 
-                await ctx.send('Now playing: {} by {}, {} seconds'.format(title, artist, duration))
+                await ctx.send('`Now playing: {} by {}, {} seconds`'.format(title, artist, duration))
                 await ctx.send(youtube_url)
 
     def finished_song(self, ctx):
@@ -81,7 +81,7 @@ class Music(commands.Cog):
         self.update_last_command(self.join)
         if ctx.author.voice == None or ctx.author.voice.channel == None:
             async with ctx.typing(): 
-                await ctx.send("User is not in a voice channel")
+                await ctx.send("`User is not in a voice channel`")
             raise CommandError("User is not in a voice channel")      
         channel = ctx.message.author.voice.channel
         await channel.connect()
@@ -93,7 +93,7 @@ class Music(commands.Cog):
             await ctx.guild.voice_client.disconnect()
         else:
             async with ctx.typing(): 
-                await ctx.send("Bot not connected to a voice channel")
+                await ctx.send("`Bot not connected to a voice channel`")
             raise CommandError("Bot not connected to a voice channel")  
 
     @commands.command()
@@ -102,7 +102,7 @@ class Music(commands.Cog):
         if ctx.guild.voice_client.is_playing():
             ctx.guild.voice_client.stop()
             async with ctx.typing(): 
-                await ctx.send("Stopped playing: {}".format(self.current_song.get_title()))
+                await ctx.send("`Stopped playing: {}`".format(self.current_song.get_title()))
 
     @commands.command()
     async def skip(self, ctx):
@@ -114,7 +114,7 @@ class Music(commands.Cog):
             await self.play_next_song(ctx)
         else:
             async with ctx.typing(): 
-                await ctx.send("Not playing any music")
+                await ctx.send("`Not playing any music`")
             raise CommandError("Not playing any music")  
 
     @commands.command()
@@ -123,7 +123,7 @@ class Music(commands.Cog):
         if ctx.guild.voice_client.is_playing():
             ctx.guild.voice_client.pause()
             async with ctx.typing(): 
-                await ctx.send("Paused the music player")
+                await ctx.send("`Paused the music player`")
         elif ctx.guild.voice_client.is_paused():
             await self.resume(ctx)
 
@@ -138,7 +138,7 @@ class Music(commands.Cog):
         if ctx.guild.voice_client.is_paused():
             ctx.guild.voice_client.resume()
             async with ctx.typing(): 
-                await ctx.send("Unpaused the music player")
+                await ctx.send("`Unpaused the music player`")
         if self.song_queue.get_num_songs() > 0 and self.last_command == self.stop:
             await self.play_next_song(ctx)
 
@@ -148,13 +148,18 @@ class Music(commands.Cog):
         # if ctx.guild.voice_client:
         #     if (len(ctx.message.content) > 6):
         #         await self.add_song(ctx, ctx.message.content[5::])
+        #         if (ctx.guild.voice_client.is_paused()):
+        #             await self.resume(ctx)
+        #         elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
+        #             await self.play_next_song(ctx)
         #     else:
         #         if (ctx.guild.voice_client.is_paused()):
         #             await self.resume(ctx)
         #         elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
         #             await self.play_next_song(ctx)
         #         else:
-        #             await ctx.send("Please provide a song to play")
+        #             async with ctx.typing(): 
+        #                 await ctx.send("Please provide a song to play")
         # else:
         #     try:
         #         await self.join(ctx)
@@ -166,18 +171,14 @@ class Music(commands.Cog):
         if ctx.guild.voice_client:
             if (len(ctx.message.content) > 6):
                 await self.add_song(ctx, ctx.message.content[5::])
-                if (ctx.guild.voice_client.is_paused()):
-                    await self.resume(ctx)
-                elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
-                    await self.play_next_song(ctx)
+                await self.resume(ctx)
             else:
-                if (ctx.guild.voice_client.is_paused()):
-                    await self.resume(ctx)
-                elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
-                    await self.play_next_song(ctx)
-                else:
+                if (not ctx.guild.voice_client.is_playing()):
                     async with ctx.typing(): 
-                        await ctx.send("Please provide a song to play")
+                        await ctx.send("`Please provide a song to play`")
+                    raise CommandError("No search query given in play")
+                else:
+                    await self.resume(ctx)
         else:
             try:
                 await self.join(ctx)
@@ -192,20 +193,25 @@ class Music(commands.Cog):
 
     @commands.command()
     async def remove(self, ctx):
-        song = int(ctx.message.content[7::])
+        index = int(ctx.message.content[7::])
+        song = self.song_queue.remove_by_index(index)
         if(song == None):
             async with ctx.typing():
-                await ctx.send("Invalid number in the queue entered")
+                await ctx.send("`Invalid number in the queue entered`")
+            raise CommandError("Invalid position in queue given")
         else:
             async with ctx.typing():
-                await ctx.send('Removed: {} by {} from the queue'.format(song.title, song.artist))
+                await ctx.send('`Removed: {} by {} from the queue`'.format(song.title, song.artist))
 
     @commands.command()
     async def clearqueue(self, ctx):
-        async with ctx.typing(): 
-            self.song_queue.clear()
+        if(self.song_queue.get_num_songs() > 0):
             async with ctx.typing(): 
-                await ctx.send("Cleared all songs from the queue :(")
+                self.song_queue.clear()
+                await ctx.send("`Cleared all songs from the queue`")
+        else:
+            async with ctx.typing():
+                await ctx.send("`Queue is empty`")
 
     @commands.command()
     async def viewqueue(self, ctx):
