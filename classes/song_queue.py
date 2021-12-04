@@ -21,7 +21,7 @@ class Song_Queue:
     def print_discord(self):
         dis_str = "`"
         for i in range(len(self.songs)):
-            dis_str += str(i) + ": "
+            dis_str += str(i+1) + ": "
             dis_str += self.songs[i].get_title()
             if i != len(self.songs) - 1:
                 dis_str += "\n"
@@ -39,6 +39,12 @@ class Song_Queue:
     # misc methods
     def get_num_songs(self):
         return self.count
+    def clear(self):
+        self.songs.clear()
+    def remove_by_index(self, index):
+        if(index < 0 or index >= self.get_num_songs()):
+            return None
+        return self.songs.pop(index)
 
 #TODO
 # IMPLEMENT OTHER SONG SOURCES APART FROM YOUTUBE

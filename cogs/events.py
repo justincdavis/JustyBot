@@ -16,13 +16,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        try:
-            if isinstance(error, discord.ext.commands.errors.CommandNotFound):
-                print("Command not found: {}".format(ctx.message.content))
-                # not quite what should be here for command error (slice on ' ' and take first element), not [0:6]
-                command = ctx.message.content.split()[0]
-                await ctx.send("Command not found: {}".format(command))
-            else:
-                print("Command error on message: {} \n With error: {}".format(ctx.message.content, error))
-        except:
-            await ctx.send("Unknown command error")
+        if isinstance(error, discord.ext.commands.errors.CommandNotFound):
+            print("Command not found: {}".format(ctx.message.content))
+            command = ctx.message.content.split()[0]
+            await ctx.send("Command not found: {}".format(command))
+        else:
+            print("Command error on message: {} \n With error: {}".format(ctx.message.content, error))
