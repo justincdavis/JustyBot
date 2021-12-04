@@ -135,6 +135,24 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx):
+        # self.update_last_command(self.play)
+        # if ctx.guild.voice_client:
+        #     if (len(ctx.message.content) > 6):
+        #         await self.add_song(ctx, ctx.message.content[5::])
+        #     else:
+        #         if (ctx.guild.voice_client.is_paused()):
+        #             await self.resume(ctx)
+        #         elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
+        #             await self.play_next_song(ctx)
+        #         else:
+        #             await ctx.send("Please provide a song to play")
+        # else:
+        #     try:
+        #         await self.join(ctx)
+        #         await self.add_song(ctx, ctx.message.content[5::])
+        #         await self.play_next_song(ctx)
+        #     except Exception as e:
+        #         raise e
         self.update_last_command(self.play)
         if ctx.guild.voice_client:
             if (len(ctx.message.content) > 6):
