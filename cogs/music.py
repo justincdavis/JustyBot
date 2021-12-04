@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned_or
 from discord.ext.commands.errors import CommandError
+from classes import song_queue
 from classes.song_queue import Song,Song_Queue,get_song_youtube
 import sys
 import asyncio
@@ -136,14 +137,15 @@ class Music(commands.Cog):
     async def play(self, ctx):
         self.update_last_command(self.play)
         if ctx.guild.voice_client:
-            if(len(ctx.message.content) > 6):
+            if (len(ctx.message.content) > 6):
                 await self.add_song(ctx, ctx.message.content[5::])
-            if (ctx.guild.voice_client.is_paused() and len(ctx.message.content) < 6):
-                await self.resume(ctx)
-            elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
-                await self.play_next_song(ctx)
             else:
-                await ctx.send("Please provide a song to play")
+                if (ctx.guild.voice_client.is_paused()):
+                    await self.resume(ctx)
+                elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
+                    await self.play_next_song(ctx)
+                else:
+                    await ctx.send("Please provide a song to play")
         else:
             try:
                 await self.join(ctx)
@@ -151,6 +153,10 @@ class Music(commands.Cog):
                 await self.play_next_song(ctx)
             except Exception as e:
                 raise e
+
+    @commands.command()
+    async def queue(self, ctx):
+        await ctx.send(song_queue.print_discord())
 
 #TAKE A YOUTUBE LINK TO PLAY
 #REMOVE LAST SONG FROM QUEUE

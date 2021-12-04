@@ -2,9 +2,9 @@ from youtube_dl import YoutubeDL
 import requests
 from .song import Song
 
-#stores songs in a queue
+# stores songs in a queue
 class Song_Queue:
-    #built in methods
+    # built in methods
     def __init__(self, songs):
         self.songs = songs
         self.count = len(self.songs)
@@ -17,7 +17,17 @@ class Song_Queue:
                 str_rep += ', '
             first = False
         return str_rep + '}'
-    #get/add operations
+    # formatting for printing in discord
+    def print_discord(self):
+        dis_str = "`"
+        for i in range(len(self.songs)):
+            dis_str += str(i) + ": "
+            dis_str += self.songs[i].get_title()
+            if i != len(self.songs) - 1:
+                dis_str += "\n"
+        dis_str += "`"
+        return dis_str
+    # get/add operations
     def get_next_song(self):
         if(self.count > 0):
             self.count -= 1
@@ -26,7 +36,7 @@ class Song_Queue:
     def add_song(self, song):
         self.count += 1
         self.songs.append(song)
-    #misc methods
+    # misc methods
     def get_num_songs(self):
         return self.count
 
@@ -43,9 +53,11 @@ def search_youtube_video(search):
         else: info = ydl.extract_info(search, download=False)
     return (info['title'], info['uploader'], info['formats'][0]['url'], info['webpage_url'], info['duration'])
 
-def get_song_youtube(search):
-    title, artist, url, youtube_url, duration = search_youtube_video(search)
-    return build_song(title, artist, url, youtube_url, duration)
+
 
 def build_song(title, artist, url, youtube_url, duration):
     return Song(title, artist, url, youtube_url, duration)
+
+def get_song_youtube(search):
+    title, artist, url, youtube_url, duration = search_youtube_video(search)
+    return build_song(title, artist, url, youtube_url, duration)

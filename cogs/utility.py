@@ -18,3 +18,7 @@ class Utility(commands.Cog):
     @commands.command()
     async def echo(self, ctx):
         await ctx.send(ctx.message.content[5::])
+
+    @commands.command()
+    async def sourcecode(self, ctx):
+        await ctx.send("Here is my source code:\nhttps://github.com/justincdavis/JustyBot")
