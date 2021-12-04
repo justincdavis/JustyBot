@@ -1,2 +1,2 @@
-git pull
-python3 run.py
+#!/bin/bash
+/usr/bin/python3 /home/pi/JustyBot/run.py
