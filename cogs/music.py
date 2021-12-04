@@ -82,7 +82,7 @@ class Music(commands.Cog):
         if ctx.author.voice == None or ctx.author.voice.channel == None:
             async with ctx.typing(): 
                 await ctx.send("`User is not in a voice channel`")
-            raise CommandError("User is not in a voice channel")      
+            # raise CommandError("User is not in a voice channel")      
         channel = ctx.message.author.voice.channel
         await channel.connect()
 
@@ -94,7 +94,7 @@ class Music(commands.Cog):
         else:
             async with ctx.typing(): 
                 await ctx.send("`Bot not connected to a voice channel`")
-            raise CommandError("Bot not connected to a voice channel")  
+            # raise CommandError("Bot not connected to a voice channel")  
 
     @commands.command()
     async def stop(self, ctx):
@@ -115,7 +115,7 @@ class Music(commands.Cog):
         else:
             async with ctx.typing(): 
                 await ctx.send("`Not playing any music`")
-            raise CommandError("Not playing any music")  
+            # raise CommandError("Not playing any music")  
 
     @commands.command()
     async def pause(self, ctx):
@@ -173,10 +173,12 @@ class Music(commands.Cog):
                 await self.add_song(ctx, ctx.message.content[5::])
                 await self.resume(ctx)
             else:
-                if (not ctx.guild.voice_client.is_playing()):
+                if (ctx.guild.voice_client.is_playing()):
                     async with ctx.typing(): 
                         await ctx.send("`Please provide a song to play`")
-                    raise CommandError("No search query given in play")
+                    # raise CommandError("No search query given in play")
+                if (ctx.guild.voice_client.is_paused()):
+                    await self.unpause()
                 else:
                     await self.resume(ctx)
         else:
@@ -198,7 +200,7 @@ class Music(commands.Cog):
         if(song == None):
             async with ctx.typing():
                 await ctx.send("`Invalid number in the queue entered`")
-            raise CommandError("Invalid position in queue given")
+            # raise CommandError("Invalid position in queue given")
         else:
             async with ctx.typing():
                 await ctx.send('`Removed: {} by {} from the queue`'.format(song.title, song.artist))

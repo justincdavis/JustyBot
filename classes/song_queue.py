@@ -46,7 +46,7 @@ class Song_Queue:
     def remove_by_index(self, index):
         if(index < 0 or index >= self.get_num_songs()):
             return None
-        return self.songs.pop(index)
+        return self.songs.pop(index-1)
 
 #TODO
 # IMPLEMENT OTHER SONG SOURCES APART FROM YOUTUBE
