@@ -144,43 +144,22 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx):
-        # self.update_last_command(self.play)
-        # if ctx.guild.voice_client:
-        #     if (len(ctx.message.content) > 6):
-        #         await self.add_song(ctx, ctx.message.content[5::])
-        #         if (ctx.guild.voice_client.is_paused()):
-        #             await self.resume(ctx)
-        #         elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
-        #             await self.play_next_song(ctx)
-        #     else:
-        #         if (ctx.guild.voice_client.is_paused()):
-        #             await self.resume(ctx)
-        #         elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
-        #             await self.play_next_song(ctx)
-        #         else:
-        #             async with ctx.typing(): 
-        #                 await ctx.send("Please provide a song to play")
-        # else:
-        #     try:
-        #         await self.join(ctx)
-        #         await self.add_song(ctx, ctx.message.content[5::])
-        #         await self.play_next_song(ctx)
-        #     except Exception as e:
-        #         raise e
         self.update_last_command(self.play)
         if ctx.guild.voice_client:
             if (len(ctx.message.content) > 6):
                 await self.add_song(ctx, ctx.message.content[5::])
-                await self.resume(ctx)
-            else:
-                if (ctx.guild.voice_client.is_playing()):
-                    async with ctx.typing(): 
-                        await ctx.send("`Please provide a song to play`")
-                    # raise CommandError("No search query given in play")
                 if (ctx.guild.voice_client.is_paused()):
-                    await self.unpause()
-                else:
                     await self.resume(ctx)
+                elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
+                    await self.play_next_song(ctx)
+            else:
+                if (ctx.guild.voice_client.is_paused()):
+                    await self.resume(ctx)
+                elif (not ctx.guild.voice_client.is_playing() and self.song_queue.get_num_songs() > 0):
+                    await self.play_next_song(ctx)
+                else:
+                    async with ctx.typing(): 
+                        await ctx.send("Please provide a song to play")
         else:
             try:
                 await self.join(ctx)
@@ -188,6 +167,27 @@ class Music(commands.Cog):
                 await self.play_next_song(ctx)
             except Exception as e:
                 raise e
+        # self.update_last_command(self.play)
+        # if ctx.guild.voice_client:
+        #     if (len(ctx.message.content) > 6):
+        #         await self.add_song(ctx, ctx.message.content[5::])
+        #         await self.resume(ctx)
+        #     else:
+        #         if (ctx.guild.voice_client.is_playing()):
+        #             async with ctx.typing(): 
+        #                 await ctx.send("`Please provide a song to play`")
+        #             # raise CommandError("No search query given in play")
+        #         if (ctx.guild.voice_client.is_paused()):
+        #             await self.unpause()
+        #         else:
+        #             await self.resume(ctx)
+        # else:
+        #     try:
+        #         await self.join(ctx)
+        #         await self.add_song(ctx, ctx.message.content[5::])
+        #         await self.play_next_song(ctx)
+        #     except Exception as e:
+        #         raise e
 
     @commands.command()
     async def queue(self, ctx):
