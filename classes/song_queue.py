@@ -20,13 +20,15 @@ class Song_Queue:
     # formatting for printing in discord
     def print_discord(self):
         if(self.get_num_songs() == 0):
-            return "`No songs in the queue :(`"
+            return "`No songs in the queue`"
         dis_str = "`"
+        total_time = 0
         for i in range(len(self.songs)):
             dis_str += str(i+1) + ": "
             dis_str += self.songs[i].get_title()
-            if i != len(self.songs) - 1:
-                dis_str += "\n"
+            total_time += self.songs[i].get_duration()
+            dis_str += "\n"
+        dis_str += "\nTotal play time of queue: {}".format(total_time)
         dis_str += "`"
         return dis_str
     # get/add operations

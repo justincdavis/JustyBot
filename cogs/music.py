@@ -211,6 +211,10 @@ class Music(commands.Cog):
     @commands.command()
     async def queue(self, ctx):
         self.update_last_command(self.queue)
+        if len(ctx.message.content) <= 6:
+            async with ctx.typing():
+                await ctx.send("Invalid entry in the queue for removal")
+            return
         await self.add_song(ctx, ctx.message.content[6::])
 
     @commands.command()
