@@ -1,32 +1,29 @@
 #!/usr/bin/python3
-
-import discord
-from discord.ext import commands
-from discord.ext.commands.bot import when_mentioned_or
-import os
 import sys
-from cogs import events, music, utility
+import os
+import asyncio
+
+try:
+    import uvloop
+
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+except ModuleNotFoundError:
+    pass
+
 from dotenv import load_dotenv
 
-#creates the bot
-def create_bot():
-    intents = discord.Intents().all()
-    bot = commands.Bot(command_prefix=when_mentioned_or('$'),intents=intents)
-    return bot
+from .src import Bot
 
-#add command cog
-def add_command_cogs(bot, cogs):
-    for cog in cogs:
-        bot.add_cog(cog)
-
-#loads the discord token from the .env
+# loads the discord token from the .env
 def get_discord_token():
     load_dotenv()
     return os.getenv("DISCORD_TOKEN")
 
+
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    bot = create_bot()
-    cogs = [events.Events(bot), music.Music(bot), utility.Utility(bot)]
-    add_command_cogs(bot, cogs)
+    # Add the extern folder to the path
+    # for finding the packaged ffmpeg
+    sys.path.insert(0, "./extern")
+
+    bot = Bot()
     bot.run(get_discord_token())
