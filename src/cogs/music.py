@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandError
 
-from classes import Song, SongQueue, MessageQueue
+from classes import Song, SongQueue, CommandQueue
 from utils.youtube import get_song_youtube
 
 
@@ -34,24 +34,24 @@ class Music(commands.Cog):
         "options": "-vn",
     }
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot) -> "Music":
         self._bot: commands.Bot = bot
         self._song_queue: SongQueue = SongQueue()
-        self._message_queue: MessageQueue = MessageQueue()
+        self._message_queue: CommandQueue = CommandQueue()
 
         self._current_song: Optional[Song] = None
         self._current_voice_ctx: Optional[commands.Context] = None
 
-    def _update_ctx(self, ctx: commands.Context):
+    def _update_ctx(self, ctx: commands.Context) -> commands.Context:
         if ctx is not None:
             self._current_voice_ctx = ctx
         return self._current_voice_ctx
 
-    def get_next_song(self) -> Song:
+    def get_next_song(self) -> Optional[Song]:
         return self._song_queue.get_next_song()
 
-    def add_song(self, ctx: commands.Context, search):
-        song = get_song_youtube(search)
+    def add_song(self, ctx: commands.Context, search) -> None:
+        song: Song = get_song_youtube(search)
         _, title, artist, duration, webpage_url = song.get_all_data()
         if ctx.guild.voice_client.is_playing():
             self._message_queue.put_message(
@@ -65,22 +65,21 @@ class Music(commands.Cog):
             )
         self._song_queue.add_song(get_song_youtube(search))
 
-    def play_next_song(self, ctx: commands.Context):
+    def play_next_song(self, ctx: commands.Context) -> None:
         ctx = self._update_ctx(ctx)
         ctx.guild.voice_client.resume()
         song = self.get_next_song()
         self.current_song = song
-        if song != None:
-            url, title, artist, duration, webpage_url = song.get_all_data()
-        else:
+        if song is None:
             ctx.guild.voice_client.stop()
             self._message_queue.put_message(ctx, ["`No more songs in the queue`"])
             return
+        url, title, artist, duration, webpage_url = song.get_all_data()
         source = discord.FFmpegPCMAudio(
             source=url, **Music.FFMPEG_OPTIONS, stderr=sys.stdout
         )
         try:
-            ctx.voice_client.play(source, after=self.finished_song)
+            ctx.voice_client.play(source, after=self.play_next_song)
         except Exception as e:
             raise e
         self._message_queue.put_message(
@@ -90,10 +89,6 @@ class Music(commands.Cog):
                 webpage_url,
             ],
         )
-
-    def finished_song(self, ctx: commands.Context):
-        self.last_action = time.time()
-        self.play_next_song(self._current_voice_ctx)
 
     @commands.command()
     async def join(self, ctx: commands.Context):

@@ -10,12 +10,12 @@ import time
 from discord.ext import commands
 
 
-class MessageQueue:
+class CommandQueue:
     """
     A queue for sending messages given context within discord
     """
 
-    def __init__(self) -> "MessageQueue":
+    def __init__(self) -> "CommandQueue":
         self._queue: Queue = Queue()
         self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
         self._thread: Thread = Thread(target=self._thread_target)

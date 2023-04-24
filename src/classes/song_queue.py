@@ -14,6 +14,7 @@ class SongQueue:
         self._songs: Deque[Song] = deque()
         if songs is not None:
             self._songs.append(songs)
+
         self._edit_lock: Lock = Lock()
 
     def __str__(self) -> str:
@@ -29,33 +30,36 @@ class SongQueue:
         """
         Prints the queue in a discord friendly format
         """
-        if self.get_num_songs() == 0:
-            return "`No songs in the queue`"
-        dis_str = "`"
-        total_time = 0
-        for i in range(len(self.songs)):
-            dis_str += str(i + 1) + ": "
-            dis_str += self.songs[i].get_title()
-            total_time += self.songs[i].get_duration()
-            dis_str += "\n"
-        dis_str += f"\nTotal play time of queue: {total_time}"
-        dis_str += "`"
-        return dis_str
+        with self._edit_lock:
+            if self.get_num_songs() == 0:
+                return "`No songs in the queue`"
+            dis_str = "`"
+            total_time = 0
+            for i in range(len(self.songs)):
+                dis_str += str(i + 1) + ": "
+                dis_str += self.songs[i].get_title()
+                total_time += self.songs[i].get_duration()
+                dis_str += "\n"
+            dis_str += f"\nTotal play time of queue: {total_time}"
+            dis_str += "`"
+            return dis_str
 
     def get_next_song(self) -> Optional[Song]:
         """
         Gets the next song in the queue
         """
-        try:
-            return self._songs.popleft()
-        except IndexError:
-            return None
+        with self._edit_lock:
+            try:
+                return self._songs.popleft()
+            except IndexError:
+                return None
 
     def add_song(self, song: Song) -> None:
         """
         Adds a song to the queue
         """
-        self._songs.append(song)
+        with self._edit_lock:
+            self._songs.append(song)
 
     def get_num_songs(self) -> int:
         """
@@ -67,17 +71,19 @@ class SongQueue:
         """
         Clears the queue
         """
-        self._songs.clear()
+        with self._edit_lock:
+            self._songs.clear()
 
     def remove_by_index(self, index: int) -> Optional[Song]:
         """
         Removes a song from the queue by index
         """
-        try:
-            song = self._delete_nth(index)
-            return song
-        except ValueError:
-            return None
+        with self._edit_lock:
+            try:
+                song = self._delete_nth(index)
+                return song
+            except ValueError:
+                return None
 
     def _delete_nth(self, n: int) -> Song:
         """

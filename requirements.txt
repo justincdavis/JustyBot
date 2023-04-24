@@ -2,4 +2,3 @@ discord.py[voice]
 python-dotenv
 youtube-dl
 requests
-uvloop
