@@ -32,9 +32,10 @@ class CommandQueue:
                     future: Future = asyncio.run_coroutine_threadsafe(
                         command, loop=self._loop
                     )
-                    future.add_done_callback(partial(print, "Finished another command"))
+                    future.add_done_callback(partial(print, "Finished another async command"))
                 else:
                     command()
+                    print("Finished another synchronous command")
             except Empty:
                 time.sleep(0.05)
 
@@ -54,7 +55,7 @@ class CommandQueue:
         """
         self._queue.put_nowait(partial(self._send_message, ctx, msg_data))
 
-    def put(self, command: Union[Callable, asyncio.coroutine]) -> None:
+    def put_command(self, command: Union[Callable, asyncio.coroutine]) -> None:
         """
         Puts a generic Callable or coroutine into the queue
         """
@@ -65,4 +66,7 @@ class CommandQueue:
         Stops the thread from sending messages
         """
         self._stopped = True
-        self._thread.join()
+        try:
+            self._thread.join()
+        except RuntimeError:
+            pass

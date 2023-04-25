@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 
 from dotenv import load_dotenv
 
-from .src import Bot
+from src import Bot
 
 # loads the discord token from the .env
 def get_discord_token():

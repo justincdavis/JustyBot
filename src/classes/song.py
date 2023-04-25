@@ -44,7 +44,7 @@ class Song:
         with self._edit_lock:
             return self._title
 
-    @property.setter
+    @title.setter
     def title(self, title: str):
         """
         Set the title of the song
@@ -62,7 +62,7 @@ class Song:
         with self._edit_lock:
             return self._artist
 
-    @property.setter
+    @artist.setter
     def artist(self, artist: str):
         """
         Set the artist of the song
@@ -80,7 +80,7 @@ class Song:
         with self._edit_lock:
             return self._url
 
-    @property.setter
+    @url.setter
     def url(self, url: str):
         """
         Set the url of the song
@@ -98,7 +98,7 @@ class Song:
         with self._edit_lock:
             return self._webpage_url
 
-    @property.setter
+    @webpage_url.setter
     def webpage_url(self, webpage_url: str):
         """
         Set the webpage url of the song
@@ -116,7 +116,7 @@ class Song:
         with self._edit_lock:
             return self._duration
 
-    @property.setter
+    @duration.setter
     def duration(self, duration: Union[int, str]):
         """
         Set the duration of the song

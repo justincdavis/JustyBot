@@ -3,13 +3,14 @@ import asyncio
 import time
 from typing import Optional, List
 from functools import partial
+import atexit
 
 import discord
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandError
 
-from classes import Song, SongQueue, CommandQueue
-from utils.youtube import get_song_youtube
+from ..classes import Song, SongQueue, CommandQueue
+from ..utils.youtube import get_song_youtube
 
 
 # TODO
@@ -37,10 +38,15 @@ class Music(commands.Cog):
     def __init__(self, bot: commands.Bot) -> "Music":
         self._bot: commands.Bot = bot
         self._song_queue: SongQueue = SongQueue()
+        self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
         self._message_queue: CommandQueue = CommandQueue()
+        self._command_queue: CommandQueue = CommandQueue()
 
         self._current_song: Optional[Song] = None
         self._current_voice_ctx: Optional[commands.Context] = None
+
+        atexit.register(self._message_queue.stop)
+        atexit.register(self._command_queue.stop)
 
     def _update_ctx(self, ctx: commands.Context) -> commands.Context:
         if ctx is not None:
@@ -70,18 +76,22 @@ class Music(commands.Cog):
         ctx.guild.voice_client.resume()
         song = self.get_next_song()
         self.current_song = song
+
         if song is None:
             ctx.guild.voice_client.stop()
             self._message_queue.put_message(ctx, ["`No more songs in the queue`"])
             return
+        
         url, title, artist, duration, webpage_url = song.get_all_data()
         source = discord.FFmpegPCMAudio(
             source=url, **Music.FFMPEG_OPTIONS, stderr=sys.stdout
         )
+
         try:
             ctx.voice_client.play(source, after=self.play_next_song)
         except Exception as e:
             raise e
+        
         self._message_queue.put_message(
             ctx,
             [
@@ -90,129 +100,147 @@ class Music(commands.Cog):
             ],
         )
 
-    @commands.command()
-    async def join(self, ctx: commands.Context):
+    def _join(self, ctx: commands.Context) -> None:
         if ctx.author.voice is None or ctx.author.voice.channel is None:
-            async with ctx.typing():
-                await ctx.send("`User is not in a voice channel`")
+            self._message_queue.put_message(ctx, ["`User is not in a voice channel`"])
         channel = ctx.message.author.voice.channel
-        await channel.connect()
+        self._command_queue.put_command(channel.connect)
 
     @commands.command()
-    async def leave(self, ctx: commands.Context):
-        if ctx.guild.voice_client:
-            await ctx.guild.voice_client.disconnect()
+    async def join(self, ctx: commands.Context) -> None:
+        self._command_queue.put_command(partial(self._join, ctx))
+
+    def _leave(self, ctx: commands.Context) -> None:
+        vc: discord.VoiceClient = ctx.guild.voice_client
+        if vc:
+            vc.stop()
+            vc.disconnect()
         else:
-            async with ctx.typing():
-                await ctx.send("`Bot not connected to a voice channel`")
-            # raise CommandError("Bot not connected to a voice channel")
+            self._message_queue.put_message(ctx, ["`Bot not connected to a voice channel`"])
 
     @commands.command()
-    async def stop(self, ctx: commands.Context):
-        if ctx.guild.voice_client.is_playing():
-            ctx.guild.voice_client.stop()
-            async with ctx.typing():
-                await ctx.send(
-                    "`Stopped playing: {}`".format(self.current_song.get_title())
-                )
+    async def leave(self, ctx: commands.Context) -> None:
+        self._command_queue.put_command(partial(self._leave, ctx))
+
+    def _stop(self, ctx: commands.Context) -> None:
+        vc: discord.VoiceClient = ctx.guild.voice_client
+        if vc.is_playing():
+            vc.stop()
+            self._message_queue.put_message(
+                ctx, ["`Stopped playing: {}`".format(self.current_song.get_title())]
+            )
 
     @commands.command()
-    async def skip(self, ctx: commands.Context):
-        if ctx.guild.voice_client.is_playing():
-            await self.stop(ctx)
-            await self.play_next_song(ctx)
-        elif ctx.voice_client and self._song_queue.get_num_songs() > 0:
-            await self.play_next_song(ctx)
+    async def stop(self, ctx: commands.Context) -> None:
+        self._command_queue.put_command(partial(self._stop, ctx))
+
+    def _skip(self, ctx: commands.Context) -> None:
+        vc: discord.VoiceClient = ctx.guild.voice_client
+        if vc.is_playing():
+            self._stop()
+            self.play_next_song(ctx)
+        elif vc and self._song_queue.get_num_songs() > 0:
+            self.play_next_song(ctx)
         else:
-            async with ctx.typing():
-                await ctx.send("`Not playing any music`")
-            # raise CommandError("Not playing any music")
+            self._message_queue.put_message(ctx, ["`Not playing any music`"])
 
     @commands.command()
-    async def pause(self, ctx: commands.Context):
-        if ctx.guild.voice_client.is_playing():
-            ctx.guild.voice_client.pause()
-            async with ctx.typing():
-                await ctx.send("`Paused the music player`")
-        elif ctx.guild.voice_client.is_paused():
-            await self.resume(ctx)
+    async def skip(self, ctx: commands.Context) -> None:
+        self._command_queue.put_command(partial(self._skip, ctx))
+
+    def _pause(self, ctx: commands.Context) -> None:
+        vc: discord.VoiceClient = ctx.guild.voice_client
+        if vc.is_playing():
+            vc.pause()
+            self._message_queue.put_message(ctx, ["`Paused the music player`"])
+        elif vc.is_paused():
+            self._resume(ctx)
 
     @commands.command()
-    async def unpause(self, ctx: commands.Context):
-        await self.resume(ctx)
+    async def pause(self, ctx: commands.Context) -> None:
+        self._command_queue.put_command(partial(self._pause, ctx))
+
+    def _resume(self, ctx: commands.Context) -> None:
+        vc: discord.VoiceClient = ctx.guild.voice_client
+        if vc.is_paused():
+            vc.resume()
+            self._message_queue.put_message(ctx, ["`Unpaused the music player`"])
+        if self._song_queue.get_num_songs() > 0 and self.last_command == self.stop:
+            self.play_next_song(ctx)
 
     @commands.command()
     async def resume(self, ctx: commands.Context):
-        if ctx.guild.voice_client.is_paused():
-            ctx.guild.voice_client.resume()
-            async with ctx.typing():
-                await ctx.send("`Unpaused the music player`")
-        if self.song_queue.get_num_songs() > 0 and self.last_command == self.stop:
-            await self.play_next_song(ctx)
+        self._command_queue.put_command(partial(self._resume, ctx))
 
-    @commands.command()
-    async def play(self, ctx: commands.Context):
-        if ctx.guild.voice_client:
+    def _play(self, ctx: commands.Context) -> None:
+        vc: discord.VoiceClient = ctx.guild.voice_client
+        if vc:
             if len(ctx.message.content) > 6:
-                await self.add_song(ctx, ctx.message.content[5::])
-                if ctx.guild.voice_client.is_paused():
-                    await self.resume(ctx)
-                elif (
-                    not ctx.guild.voice_client.is_playing()
-                    and self._song_queue.get_num_songs() > 0
-                ):
-                    await self.play_next_song(ctx)
+                self.add_song(ctx, ctx.message.content[5::])
+                if vc.is_paused():
+                    self._resume(ctx)
+                elif not vc.is_playing() and self._song_queue.get_num_songs() > 0:
+                    self.play_next_song(ctx)
             else:
-                if ctx.guild.voice_client.is_paused():
-                    await self.resume(ctx)
-                elif (
-                    not ctx.guild.voice_client.is_playing()
-                    and self._song_queue.get_num_songs() > 0
-                ):
-                    await self.play_next_song(ctx)
+                if vc.is_paused():
+                    self._resume(ctx)
+                elif not vc.is_playing() and self._song_queue.get_num_songs() > 0:
+                    self.play_next_song(ctx)
                 else:
-                    async with ctx.typing():
-                        await ctx.send("Please provide a song to play")
+                    self._message_queue.put_message(ctx, ["`Not playing any music`"])
         else:
             try:
-                await self.join(ctx)
-                await self.add_song(ctx, ctx.message.content[5::])
-                await self.play_next_song(ctx)
+                self._join(ctx)
+                self.add_song(ctx, ctx.message.content[5::])
+                self.play_next_song(ctx)
             except Exception as e:
                 raise e
 
     @commands.command()
-    async def queue(self, ctx: commands.Context):
+    async def play(self, ctx: commands.Context):
+        self._command_queue.put_command(partial(self._play, ctx))
+
+    def _queue(self, ctx: commands.Context) -> None:
         if len(ctx.message.content) <= 6:
-            async with ctx.typing():
-                await ctx.send("Invalid entry in the queue for removal")
-            return
-        await self.add_song(ctx, ctx.message.content[6::])
+            self._message_queue.put_message(ctx, ["`Invalid entry in the queue for removal`"])
+        else:
+            self.add_song(ctx, ctx.message.content[6::])
 
     @commands.command()
-    async def remove(self, ctx: commands.Context):
+    async def queue(self, ctx: commands.Context):
+        self._command_queue.put_command(partial(self._queue, ctx))
+
+    def _remove(self, ctx: commands.Context) -> None:
         index = int(ctx.message.content[7::])
         song: Optional[Song] = self._song_queue.remove_by_index(index)
         if song is None:
-            async with ctx.typing():
-                await ctx.send("`Invalid number in the queue entered`")
+            self._message_queue.put_message(ctx, ["`Invalid number in the queue entered`"])
         else:
-            async with ctx.typing():
-                await ctx.send(
-                    "`Removed: {} by {} from the queue`".format(song.title, song.artist)
-                )
+            self._message_queue.put_message(
+                ctx, ["`Removed: {} by {} from the queue`".format(song.title, song.artist)]
+            )
+
+    @commands.command()
+    async def remove(self, ctx: commands.Context):
+        self._command_queue.put_command(partial(self._remove, ctx))
+
+    def _clearqueue(self, ctx: commands.Context) -> None:
+        if self._song_queue.get_num_songs() > 0:
+            self._song_queue.clear()
+            self._message_queue.put_message(ctx, ["`Cleared all songs from the queue`"])
+        else:
+            self._message_queue.put_message(ctx, ["`Queue is empty`"])
 
     @commands.command()
     async def clearqueue(self, ctx: commands.Context):
+        self._command_queue.put_command(partial(self._clearqueue, ctx))
+
+    def _viewqueue(self, ctx: commands.Context) -> None:
         if self._song_queue.get_num_songs() > 0:
-            async with ctx.typing():
-                self._song_queue.clear()
-                await ctx.send("`Cleared all songs from the queue`")
+            self._message_queue.put_message(ctx, [self._song_queue.print_discord()])
         else:
-            async with ctx.typing():
-                await ctx.send("`Queue is empty`")
+            self._message_queue.put_message(ctx, ["`Queue is empty`"])
 
     @commands.command()
     async def viewqueue(self, ctx: commands.Context):
-        async with ctx.typing():
-            await ctx.send(self._song_queue.print_discord())
+        self._command_queue.put_command(partial(self._viewqueue, ctx))
