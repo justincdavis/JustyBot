@@ -1,10 +1,13 @@
 import discord
 from discord.ext import commands
 
+from ..classes import CommandQueue
+
 
 class Events(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> "Events":
+    def __init__(self, bot: commands.Bot, queue: CommandQueue) -> "Events":
         self._bot: commands.Bot = bot
+        self._queue: CommandQueue = queue
 
     @commands.Cog.listener()
     async def on_ready(self):

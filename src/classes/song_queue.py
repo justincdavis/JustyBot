@@ -10,7 +10,7 @@ class SongQueue:
     A queue of songs to be played
     """
 
-    def __init__(self, songs: Optional[List[Song]]) -> "SongQueue":
+    def __init__(self, songs: Optional[List[Song]] = None) -> "SongQueue":
         self._songs: Deque[Song] = deque()
         if songs is not None:
             self._songs.append(songs)

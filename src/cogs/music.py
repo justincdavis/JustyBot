@@ -1,9 +1,11 @@
 import sys
-import asyncio
 import time
-from typing import Optional, List
+import asyncio
+from typing import Optional, List, Deque
 from functools import partial
 import atexit
+from concurrent.futures import Future
+from collections import deque
 
 import discord
 from discord.ext import commands, tasks
@@ -35,15 +37,23 @@ class Music(commands.Cog):
         "options": "-vn",
     }
 
-    def __init__(self, bot: commands.Bot) -> "Music":
+    def __init__(self, bot: commands.Bot, queue: CommandQueue) -> "Music":
         self._bot: commands.Bot = bot
         self._song_queue: SongQueue = SongQueue()
-        self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-        self._message_queue: CommandQueue = CommandQueue()
-        self._command_queue: CommandQueue = CommandQueue()
+
+        while True:
+            try:
+                self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+                break
+            except RuntimeError:
+                time.sleep(0.05)
+
+        self._message_queue: CommandQueue = queue
+        self._command_queue: CommandQueue = queue
 
         self._current_song: Optional[Song] = None
         self._current_voice_ctx: Optional[commands.Context] = None
+        self._connections: Deque[Future] = deque()
 
         atexit.register(self._message_queue.stop)
         atexit.register(self._command_queue.stop)
@@ -100,15 +110,15 @@ class Music(commands.Cog):
             ],
         )
 
-    def _join(self, ctx: commands.Context) -> None:
+    async def _join(self, ctx: commands.Context) -> None:
         if ctx.author.voice is None or ctx.author.voice.channel is None:
             self._message_queue.put_message(ctx, ["`User is not in a voice channel`"])
         channel = ctx.message.author.voice.channel
-        self._command_queue.put_command(channel.connect)
+        await channel.connect()
 
     @commands.command()
     async def join(self, ctx: commands.Context) -> None:
-        self._command_queue.put_command(partial(self._join, ctx))
+        self._command_queue.put(self._join, ctx)
 
     def _leave(self, ctx: commands.Context) -> None:
         vc: discord.VoiceClient = ctx.guild.voice_client
@@ -120,7 +130,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def leave(self, ctx: commands.Context) -> None:
-        self._command_queue.put_command(partial(self._leave, ctx))
+        self._command_queue.put(self._leave, ctx)
 
     def _stop(self, ctx: commands.Context) -> None:
         vc: discord.VoiceClient = ctx.guild.voice_client
@@ -132,7 +142,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def stop(self, ctx: commands.Context) -> None:
-        self._command_queue.put_command(partial(self._stop, ctx))
+        self._command_queue.put(self._stop, ctx)
 
     def _skip(self, ctx: commands.Context) -> None:
         vc: discord.VoiceClient = ctx.guild.voice_client
@@ -146,7 +156,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def skip(self, ctx: commands.Context) -> None:
-        self._command_queue.put_command(partial(self._skip, ctx))
+        self._command_queue.put(self._skip, ctx)
 
     def _pause(self, ctx: commands.Context) -> None:
         vc: discord.VoiceClient = ctx.guild.voice_client
@@ -158,7 +168,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def pause(self, ctx: commands.Context) -> None:
-        self._command_queue.put_command(partial(self._pause, ctx))
+        self._command_queue.put(self._pause, ctx)
 
     def _resume(self, ctx: commands.Context) -> None:
         vc: discord.VoiceClient = ctx.guild.voice_client
@@ -170,7 +180,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def resume(self, ctx: commands.Context):
-        self._command_queue.put_command(partial(self._resume, ctx))
+        self._command_queue.put(self._resume, ctx)
 
     def _play(self, ctx: commands.Context) -> None:
         vc: discord.VoiceClient = ctx.guild.voice_client
@@ -198,7 +208,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx: commands.Context):
-        self._command_queue.put_command(partial(self._play, ctx))
+        self._command_queue.put(self._play, ctx)
 
     def _queue(self, ctx: commands.Context) -> None:
         if len(ctx.message.content) <= 6:
@@ -208,7 +218,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def queue(self, ctx: commands.Context):
-        self._command_queue.put_command(partial(self._queue, ctx))
+        self._command_queue.put(self._queue, ctx)
 
     def _remove(self, ctx: commands.Context) -> None:
         index = int(ctx.message.content[7::])
@@ -222,7 +232,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def remove(self, ctx: commands.Context):
-        self._command_queue.put_command(partial(self._remove, ctx))
+        self._command_queue.put(self._remove, ctx)
 
     def _clearqueue(self, ctx: commands.Context) -> None:
         if self._song_queue.get_num_songs() > 0:
@@ -233,7 +243,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def clearqueue(self, ctx: commands.Context):
-        self._command_queue.put_command(partial(self._clearqueue, ctx))
+        self._command_queue.put(self._clearqueue, ctx)
 
     def _viewqueue(self, ctx: commands.Context) -> None:
         if self._song_queue.get_num_songs() > 0:
@@ -243,4 +253,4 @@ class Music(commands.Cog):
 
     @commands.command()
     async def viewqueue(self, ctx: commands.Context):
-        self._command_queue.put_command(partial(self._viewqueue, ctx))
+        self._command_queue.put(self._viewqueue, ctx)
